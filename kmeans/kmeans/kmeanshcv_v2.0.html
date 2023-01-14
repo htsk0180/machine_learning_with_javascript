@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>hcv dataseti ile k-means kümeleme</title>
+</head>
+<body>
+<script>
+
+// VERİNİN YÜKLENMESİ
+function veri_yukle() { // veri yükleme fonksiyonu
+    var data = []; // veri dizisi
+    var file = "hcvdata.csv"; // veri dosyası
+    var rawFile = new XMLHttpRequest();
+    rawFile.open("GET", file, false);
+    rawFile.onreadystatechange = function () {
+        if (rawFile.readyState === 4) {
+            if (rawFile.status === 200 || rawFile.status == 0) {
+                var allText = rawFile.responseText;
+                var lines = allText.split(/\r\n|\n/);
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].split(",");
+                    data.push(line);
+                }
+            }
+        }
+    }
+    rawFile.send(null);
+    return data;
+}
+var data = veri_yukle(); // veri yükleme fonksiyonu çağırılıyor.
+
+// data'nın ilk 4 sütünunu sil.
+data = data.map(function (x) {
+    return x.slice(4);
+});
+
+// data'nın type'ını float yap.
+data = data.map(function (x) {
+    return x.map(function (y) {
+        return parseFloat(y);
+    });
+});
+
+// data'nın typeını kontrol et.
+console.log(data[0].map(function (x) {
+    return typeof x;
+}));
+
+// data'nın ilk satırını sil.
+data = data.slice(1);
+
+// data'nın ilk iki satırını yazdır.
+
+
+// data içindeki NaN değerlerini saıyısını bul.
+var nan_sayisi = 0;
+for (var i = 0; i < data.length; i++) {
+    for (var j = 0; j < data[i].length; j++) {
+        if (isNaN(data[i][j])) {
+            nan_sayisi++;
+        }
+    }
+}
+
+
+// her sutünnun ortalamasını bul.
+var ortalama = [];
+for (var i = 0; i < data[0].length; i++) {
+    var toplam = 0;
+    var sayac = 0;
+    for (var j = 0; j < data.length; j++) {
+        if (!isNaN(data[j][i])) {
+            toplam += data[j][i];
+            sayac++;
+        }
+    }
+    ortalama.push(toplam / sayac);
+}
+
+
+
+// her süütünun ortalamasını NaN değerlerine yaz.
+for (var i = 0; i < data.length; i++) {
+    for (var j = 0; j < data[i].length; j++) {
+        if (isNaN(data[i][j])) {
+            data[i][j] = ortalama[j];
+        }
+    }
+}
+
+// data içindeki NaN değerlerini saıyısını bul.
+var nan_sayisi = 0;
+for (var i = 0; i < data.length; i++) {
+    for (var j = 0; j < data[i].length; j++) {
+        if (isNaN(data[i][j])) {
+            nan_sayisi++;
+        }
+    }
+}
+
+// k değerini kullanıcıdan al.
+
+var k = prompt("k değerini giriniz");
+
+// girilen k değerine göre 0-1080 arasında sutün sayısı kadar rastgele merkez noktası oluştur.
+var merkezler = [];
+for (var i = 0; i < k; i++) {
+    var merkez = [];
+    for (var j = 0; j < data[0].length; j++) {
+        merkez.push(Math.floor(Math.random() * 100));
+    }
+    merkezler.push(merkez);
+}
+
+
+document.write("Küme Merkezleri: <br>");
+for (var i = 0; i < merkezler.length; i++) {
+    document.write(merkezler[i] + "<br>");
+}
+
+// datanın ortamama değerlerini hesapla.
+var ortalama = [];
+for (var i = 0; i < data[0].length; i++) {
+    var toplam = 0;
+    var sayac = 0;
+    for (var j = 0; j < data.length; j++) {
+        if (!isNaN(data[j][i])) {
+            toplam += data[j][i];
+            sayac++;
+        }
+    }
+    ortalama.push(toplam / sayac);
+}
+
+document.write("Ortalama Değerler: <br>");
+document.write(ortalama + "<br>");
+
+// her sütunun verisinin 100'den büyük değerlerini ortalamaya eşitle.
+for (var i = 0; i < data.length; i++) {
+    for (var j = 0; j < data[i].length; j++) {
+        if (data[i][j] > 100) {
+            data[i][j] = ortalama[j];
+        }
+    }
+}
+
+// datanın min ve max değerlerini hesapla.
+var min = [];
+var max = [];
+for (var i = 0; i < data[0].length; i++) {
+    var min_deger = data[0][i];
+    var max_deger = data[0][i];
+    for (var j = 0; j < data.length; j++) {
+        if (data[j][i] < min_deger) {
+            min_deger = data[j][i];
+        }
+        if (data[j][i] > max_deger) {
+            max_deger = data[j][i];
+        }
+    }
+    min.push(min_deger);
+    max.push(max_deger);
+}
+
+document.write("Min Değerler: <br>");
+document.write(min + "<br>");
+
+document.write("Max Değerler: <br>");
+document.write(max + "<br>");
+
+
+
+// her bir verinin merkez noktalarına olan uzaklıklarını hesapla.
+var uzakliklar = [];
+for (var i = 0; i < data.length; i++) {
+    var uzakliklar_satir = [];
+    for (var j = 0; j < merkezler.length; j++) {
+        var uzaklik = 0;
+        for (var l = 0; l < data[i].length; l++) {
+            uzaklik += Math.pow(data[i][l] - merkezler[j][l], 2);
+        }
+        uzakliklar_satir.push(Math.sqrt(uzaklik));
+    }
+    uzakliklar.push(uzakliklar_satir);
+}
+
+// hangi küme noktasına hangi veri noktası yakınsa o veri noktasını o küme noktasına at.
+var kume_noktalari = [];
+for (var i = 0; i < k; i++) {
+    kume_noktalari.push([]);
+}
+
+for (var i = 0; i < uzakliklar.length; i++) {
+    var min = Math.min.apply(null, uzakliklar[i]);
+    var index = uzakliklar[i].indexOf(min);
+    kume_noktalari[index].push(data[i]);
+}
+
+
+
+// her kümenin elemanlarını farklı renklerde yazdır.
+for (var i = 0; i < kume_noktalari.length; i++) {
+    document.write("<p style='color:rgb(" + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + ")'>");
+    for (var j = 0; j < kume_noktalari[i].length; j++) {
+        document.write(kume_noktalari[i][j] + "<br>");
+    }
+    document.write("</p>");
+}
+
+// her kümenin ortalamasını bul.
+var kume_ortalama = [];
+for (var i = 0; i < kume_noktalari.length; i++) {
+    var toplam = [];
+    for (var j = 0; j < kume_noktalari[i][0].length; j++) {
+        toplam.push(0);
+    }
+    for (var j = 0; j < kume_noktalari[i].length; j++) {
+        for (var l = 0; l < kume_noktalari[i][j].length; l++) {
+            toplam[l] += kume_noktalari[i][j][l];
+        }
+    }
+    for (var j = 0; j < toplam.length; j++) {
+        toplam[j] /= kume_noktalari[i].length;
+    }
+    kume_ortalama.push(toplam);
+}
+
+// yeni merkezlerin bulunması.
+var yeni_merkezler = [];
+for (var i = 0; i < kume_ortalama.length; i++) {
+    yeni_merkezler.push(kume_ortalama[i]);
+}
+
+// yeni merkez noktaları ile eski merkez noktaları yan yana yazdır.
+/*
+for (var i = 0; i < merkezler.length; i++) {
+    document.write(merkezler[i] + " - " + yeni_merkezler[i] + "<br>");
+}
+*/
+// yeni merkez noktalarına göre uzaklıkları hesapla.
+var yeni_uzakliklar = [];
+for (var i = 0; i < data.length; i++) {
+    var uzakliklar_satir = [];
+    for (var j = 0; j < yeni_merkezler.length; j++) {
+        var uzaklik = 0;
+        for (var l = 0; l < data[i].length; l++) {
+            uzaklik += Math.pow(data[i][l] - yeni_merkezler[j][l], 2);
+        }
+        uzakliklar_satir.push(Math.sqrt(uzaklik));
+    }
+    yeni_uzakliklar.push(uzakliklar_satir);
+}
+
+// hangi yeni merkez noktasına hangi veri noktası yakınsa o veri noktasını o küme noktasına at.
+
+var yeni_kume_noktalari = [];
+for (var i = 0; i < k; i++) {
+    yeni_kume_noktalari.push([]);
+}
+
+for (var i = 0; i < yeni_uzakliklar.length; i++) {
+    var min = Math.min.apply(null, yeni_uzakliklar[i]);
+    var index = yeni_uzakliklar[i].indexOf(min);
+    yeni_kume_noktalari[index].push(data[i]);
+}
+
+//document.write(yeni_kume_noktaları);
+
+// merkezler ile yeni_merkezler birbirine eşit olana kadar kümeleme işlemini tekrarla.
+count = 0;
+while (true) {
+    count++;
+    merkezler = yeni_merkezler;
+    kume_noktalari = yeni_kume_noktalari;
+    kume_ortalama = [];
+    for (var i = 0; i < kume_noktalari.length; i++) {
+        var toplam = [];
+        for (var j = 0; j < kume_noktalari[i][0].length; j++) {
+            toplam.push(0);
+        }
+        for (var j = 0; j < kume_noktalari[i].length; j++) {
+            for (var l = 0; l < kume_noktalari[i][j].length; l++) {
+                toplam[l] += kume_noktalari[i][j][l];
+            }
+        }
+        for (var j = 0; j < toplam.length; j++) {
+            toplam[j] /= kume_noktalari[i].length;
+        }
+        kume_ortalama.push(toplam);
+    }
+    yeni_merkezler = [];
+    for (var i = 0; i < kume_ortalama.length; i++) {
+        yeni_merkezler.push(kume_ortalama[i]);
+    }
+    yeni_uzakliklar = [];
+    for (var i = 0; i < data.length; i++) {
+        var uzakliklar_satir = [];
+        for (var j = 0; j < yeni_merkezler.length; j++) {
+            var uzaklik = 0;
+            for (var l = 0; l < data[i].length; l++) {
+                uzaklik += Math.pow(data[i][l] - yeni_merkezler[j][l], 2);
+            }
+            uzakliklar_satir.push(Math.sqrt(uzaklik));
+        }
+        yeni_uzakliklar.push(uzakliklar_satir);
+    }
+    yeni_kume_noktalari = [];
+    for (var i = 0; i < k; i++) {
+        yeni_kume_noktalari.push([]);
+    }
+    for (var i = 0; i < yeni_uzakliklar.length; i++) {
+        var min = Math.min.apply(null, yeni_uzakliklar[i]);
+        var index = yeni_uzakliklar[i].indexOf(min);
+        yeni_kume_noktalari[index].push(data[i]);
+    }
+    if (JSON.stringify(merkezler) == JSON.stringify(yeni_merkezler)) {
+        break;
+    }
+}
+
+document.write("Kümeleme işlemi " + count + " kere tekrarlandı.");
+
+// son küme merkezlerini yazdır.
+document.write("<br><br>Merkezler:<br>");
+for (var i = 0; i < yeni_merkezler.length; i++) {
+    document.write(yeni_merkezler[i] + "<br>");
+}
+
+// döngünden sonra oluşan küme noktaları küme küme yazdır.
+document.write("<br><br>Küme Noktaları:<br>");
+for (var i = 0; i < yeni_kume_noktalari.length; i++) {
+    document.write("Küme " + (i + 1) + ":<br>");
+    for (var j = 0; j < yeni_kume_noktalari[i].length; j++) {
+        document.write(yeni_kume_noktalari[i][j] + "<br>");
+    }
+    document.write("<br>");
+}
+
+// döngünden sonra oluşan kümelerin eleman sayılarını yazdır.
+document.write("<br><br>Küme Eleman Sayıları:<br>");
+for (var i = 0; i < yeni_kume_noktalari.length; i++) {
+    document.write("Küme " + (i + 1) + ": " + yeni_kume_noktalari[i].length + "<br>");
+}
+
+// bütün işlem bittikten sonra alert olarak kaç döngü sonra kaç tane küme oluştuğunu ve eleman sayılarını yazdır.
+alert("HCVDataseti üzerinde K-Means algoritması tamamlandı..Kümeleme işlemi " + count + " kez tekrarlandı. " + yeni_kume_noktalari.length + " tane küme oluştu. Küme eleman sayıları: " + yeni_kume_noktalari.map(function (x) {
+    return x.length;
+}));
+
+
+
+
+
+</script>
+</body>
+</html>

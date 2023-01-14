@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>hcv dataseti ile k-means kümeleme</title>
+</head>
+<body>
+<script>
+
+// VERİNİN YÜKLENMESİ
+function veri_yukle() { // veri yükleme fonksiyonu
+    var data = []; // veri dizisi
+    var file = "hcvdata.csv"; // veri dosyası
+    var rawFile = new XMLHttpRequest();
+    rawFile.open("GET", file, false);
+    rawFile.onreadystatechange = function () {
+        if (rawFile.readyState === 4) {
+            if (rawFile.status === 200 || rawFile.status == 0) {
+                var allText = rawFile.responseText;
+                var lines = allText.split(/\r\n|\n/);
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].split(",");
+                    data.push(line);
+                }
+            }
+        }
+    }
+    rawFile.send(null);
+    return data;
+}
+var data = veri_yukle(); // veri yükleme fonksiyonu çağırılıyor.
+
+// data'nın ilk 4 sütünunu sil.
+data = data.map(function (x) {
+    return x.slice(4);
+});
+
+// yeni data yı ekrana yazdır.
+function ekrana_yaz(data) {
+    var table = document.createElement("table");
+    var thead = document.createElement("thead");
+    var tbody = document.createElement("tbody");
+    var tr = document.createElement("tr");
+    var th = document.createElement("th");
+    th.innerHTML = "ID";
+    tr.appendChild(th);
+    for (var i = 0; i < data[0].length; i++) {
+        var th = document.createElement("th");
+        th.innerHTML = "X" + (i + 1);
+        tr.appendChild(th);
+    }
+    thead.appendChild(tr);
+    table.appendChild(thead);
+    for (var i = 0; i < data.length; i++) {
+        var tr = document.createElement("tr");
+        var td = document.createElement("td");
+        td.innerHTML = i + 1;
+        tr.appendChild(td);
+        for (var j = 0; j < data[i].length; j++) {
+            var td = document.createElement("td");print_data
+            td.innerHTML = data[i][j];
+            tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    document.body.appendChild(table);
+}
+//ekrana_yaz(data);
+
+// NaN değerleri 0'a çevir
+function nan_cevir(data) {
+    for (var i = 0; i < data.length; i++) {
+        for (var j = 0; j < data[i].length; j++) {
+            if (isNaN(data[i][j])) {
+                data[i][j] = 0;
+            }
+        }
+    }
+    return data;
+}
+data = nan_cevir(data);
+//ekrana_yaz(data);
+
+// ilk satırı sil
+data = data.slice(1);
+//ekrana_yaz(data);
+
+// data'yı float'a çevir
+function float_cevir(data) {
+    for (var i = 0; i < data.length; i++) {
+        for (var j = 0; j < data[i].length; j++) {
+            data[i][j] = parseFloat(data[i][j]);
+        }
+    }
+    return data;
+}
+data = float_cevir(data);
+//ekrana_yaz(data);
+
+// k değerini al
+var k = prompt("k değerini giriniz: ");
+// k değerini sayıya çevir
+k = parseInt(k);
+// k değerini ekrana yazdır
+document.write("belirlediğim küme sayısı = " + k + "<br><br>");
+
+/****************************************************************************************/
+/*K-MEANS ALGORİTMASI*/
+/****************************************************************************************/
+
+// k değerine göre rastgele merkez noktaları oluştur.
+function merkez_olustur(data, k) { // merkez noktaları oluşturma fonksiyonu
+    var centroids = []; // merkez noktaları dizisi
+    for (var i = 0; i < k; i++) { // k değeri kadar döngü
+        var centroid = []; // merkez noktası
+        for (var j = 0; j < data[0].length; j++) { // veri sütun sayısı kadar döngü
+            centroid.push(Math.random() * 1082); // rastgele sayı üret, 1082 sayısı veri setindeki en büyük değer olarak alındı.
+        }
+        centroids.push(centroid); // merkez noktasını merkez noktaları dizisine ekle
+    }
+    return centroids; // merkez noktalarını döndür
+}
+var centroids = merkez_olustur(data, k); // merkez noktaları oluşturma fonksiyonu çağırılıyor.
+document.write("hesaplanan merkez noktaları = " + centroids + "<br><br>");
+//ekrana_yaz(centroids);
+
+// her bir noktanın verilen merkez noktalarına olan uzaklıklarını hesaplıyoruz.
+function uzaklik_hesapla(data, centroids) { // uzaklık hesaplama fonksiyonu
+    var distances = []; // uzaklık dizisi
+    for (var i = 0; i < data.length; i++) { // veri satır sayısı kadar döngü
+        var distance = []; // uzaklık
+        for (var j = 0; j < centroids.length; j++) { // merkez nokta sayısı kadar döngü
+            var sum = 0; // uzaklık toplamı
+            for (var l = 0; l < data[i].length; l++) { // veri sütun sayısı kadar döngü
+                sum += Math.pow(data[i][l] - centroids[j][l], 2); // uzaklık hesabı
+            }
+            distance.push(Math.sqrt(sum)); // uzaklığı uzaklık dizisine ekle
+        }
+        distances.push(distance); // uzaklığı uzaklık dizisine ekle
+    }
+    return distances; // uzaklıkları döndür
+}
+var distances = uzaklik_hesapla(data, centroids); // uzaklık hesaplama fonksiyonu çağırılıyor.
+document.write("her bir noktanın merkez noktalarına olan uzaklıkları = " + distances + "<br><br>");
+//ekrana_yaz(distances);
+
+// her bir noktanın en yakın merkez noktasını bul
+function en_yakin_merkez(distances) { // en yakın merkez noktası bulma fonksiyonu
+    var clusters = []; // küme dizisi
+    for (var i = 0; i < distances.length; i++) { // uzaklık satır sayısı kadar döngü
+        var min = distances[i][0]; // en yakın uzaklık
+        var index = 0; // en yakın uzaklığın indexi
+        for (var j = 0; j < distances[i].length; j++) { // uzaklık sütun sayısı kadar döngü
+            if (distances[i][j] < min) { // eğer uzaklık en yakın uzaklıktan küçükse
+                min = distances[i][j]; // en yakın uzaklığı güncelle
+                index = j; // en yakın uzaklığın indexini güncelle
+            }
+        }
+        clusters.push(index); // en yakın uzaklığın indexini küme dizisine ekle
+    }
+    return clusters; // küme dizisini döndür
+}
+var clusters = en_yakin_merkez(distances); // en yakın merkez noktası bulma fonksiyonu çağırılıyor.
+document.write("her bir noktanın en yakın merkez noktası = " + clusters + "<br><br>");
+
+// her bir merkez noktasına ait noktaları bul
+function merkez_noktalari(clusters, k) { // merkez noktaları bulma fonksiyonu
+    var cluster_points = []; // merkez noktası noktaları dizisi
+    for (var i = 0; i < k; i++) { // k değeri kadar döngü
+        var cluster_point = []; // merkez noktası noktaları
+        for (var j = 0; j < clusters.length; j++) { // küme satır sayısı kadar döngü
+            if (clusters[j] == i) { // eğer küme değeri i'ye eşitse
+                cluster_point.push(j); // merkez noktası noktalarına ekle
+            }
+        }
+        cluster_points.push(cluster_point); // merkez noktası noktalarını merkez noktası noktaları dizisine ekle
+    }
+    return cluster_points; // merkez noktası noktalarını döndür
+}
+
+var cluster_points = merkez_noktalari(clusters, k); // merkez noktaları bulma fonksiyonu çağırılıyor.
+document.write("her bir merkez noktasına ait noktalar = " + cluster_points + "<br><br>");
+
+// kümeleri ekrana yazdır
+function kumeleri_ekrana_yaz(cluster_points) {
+    for (var i = 0; i < cluster_points.length; i++) {
+        document.write("küme " + (i + 1) + " = " + cluster_points[i] + "<br><br>");
+    }
+}
+kumeleri_ekrana_yaz(cluster_points);
+
+// kümeleri ve elemanları ekrana renkli yazdır
+function renkli_ekrana_yaz(cluster_points, data) {
+    var colors = ["red", "green", "blue", "yellow", "orange", "purple", "pink", "brown", "black", "gray"];
+    for (var i = 0; i < cluster_points.length; i++) {
+        document.write("<font color='" + colors[i] + "'>küme " + (i + 1) + " = " + cluster_points[i] + "</font><br><br>");
+        for (var j = 0; j < cluster_points[i].length; j++) {
+            document.write("<font color='" + colors[i] + "'>" + data[cluster_points[i][j]] + "</font><br>");
+        }
+        document.write("<br>");
+    }
+}
+renkli_ekrana_yaz(cluster_points, data);
+
+/*YENİ MERKEZ NOKTALARI HESABI*/
+
+// her kümenin yeni merkezini ortalama ile hesapla
+function yeni_merkez_hesapla(cluster_points, data) { // yeni merkez hesaplama fonksiyonu
+    var new_centroids = []; // yeni merkez noktaları dizisi
+    for (var i = 0; i < cluster_points.length; i++) { // merkez noktası noktaları satır sayısı kadar döngü
+        var new_centroid = []; // yeni merkez noktası
+        for (var j = 0; j < data[0].length; j++) { // veri sütun sayısı kadar döngü
+            var sum = 0; // toplam
+            for (var l = 0; l < cluster_points[i].length; l++) { // merkez noktası noktaları satır sayısı kadar döngü
+                sum += data[cluster_points[i][l]][j]; // veri toplamına ekle
+            }
+            new_centroid.push(sum / cluster_points[i].length); // sum= veri toplamı, cluster_points[i].length= merkez noktası noktaları satır sayısı
+        }
+        new_centroids.push(new_centroid); // yeni merkez noktasını yeni merkez noktaları dizisine ekle
+    }
+    return new_centroids;
+}
+var new_centroids = yeni_merkez_hesapla(cluster_points, data);
+
+//yeni merkez noktalarındaki NaN değerlere eski merkez noktalarını ata
+function yeni_merkez_nan_kontrol(new_centroids, centroids) {
+    for (var i = 0; i < new_centroids.length; i++) {
+        for (var j = 0; j < new_centroids[i].length; j++) {
+            if (isNaN(new_centroids[i][j])) {
+                new_centroids[i][j] = centroids[i][j];
+            }
+        }
+    }
+    return new_centroids;
+}
+var new_centroids = yeni_merkez_nan_kontrol(new_centroids, centroids);
+
+// yeni merkez noktaları ile eski merkez noktalarını yan yana yazdır
+function merkezleri_yan_yana_yaz(centroids, new_centroids) {
+    for (var i = 0; i < centroids.length; i++) {
+        document.write("merkez " + (i + 1) + " = " + centroids[i] + " yeni merkez " + (i + 1) + " = " + new_centroids[i] + "<br><br>");
+    }
+}
+merkezleri_yan_yana_yaz(centroids, new_centroids);
+
+/* YENİ MERKEZ NOKTALARINA GÖRE YENİ KÜMELEME */
+
+// yeni merkez noktalarına göre yeniden kümeleme yap
+function yeniden_kumeleme(cluster_points, new_centroids, data) { // yeniden kümeleme fonksiyonu
+    var distances = uzaklik_hesapla(data, new_centroids); // yeni merkez noktalarına göre uzaklık hesaplama fonksiyonu çağırılıyor.
+    var clusters = en_yakin_merkez(distances); // en yakın merkez noktası bulma fonksiyonu çağırılıyor.
+    var cluster_points = merkez_noktalari(clusters, k); // merkez noktaları bulma fonksiyonu çağırılıyor.
+    return cluster_points; // yeni kümeleme noktaları döndürülüyor.
+}
+
+// yeni merkez noktaları ile eski merkez noktaları aynı olana kadar yeniden kümeleme yap
+count = 0; // döngü sayacı
+while (JSON.stringify(centroids) != JSON.stringify(new_centroids)) { // yeni merkez noktaları ile eski merkez noktaları aynı olana kadar döngü
+    centroids = new_centroids; // yeni merkez noktaları eski merkez noktaları olarak ata
+    cluster_points = yeniden_kumeleme(cluster_points, new_centroids, data); // yeni merkez noktalarına göre yeniden kümeleme yap
+    new_centroids = yeni_merkez_hesapla(cluster_points, data); // yeni merkez noktalarını hesapla
+    new_centroids = yeni_merkez_nan_kontrol(new_centroids, centroids); // yeni merkez noktalarındaki NaN değerlere eski merkez noktalarını ata
+    merkezleri_yan_yana_yaz(centroids, new_centroids); // yeni merkez noktaları ile eski merkez noktalarını yan yana yazdır
+    count++; // döngü sayacını 1 arttır
+}
+
+/* SONUÇLAR */
+
+// sonuçları ekrana yazdır
+kumeleri_ekrana_yaz(cluster_points);
+renkli_ekrana_yaz(cluster_points, data);
+merkezleri_yan_yana_yaz(centroids, new_centroids);
+
+document.write("BİLGİLENDİRME: kümeleme işlemi " + count + " kere tekrarlandıktan sonra merkez noktaları eşitlendi..");
+
+</script>
+</body>
+</html>

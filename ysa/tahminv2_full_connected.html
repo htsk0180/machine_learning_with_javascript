@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Javascript İle Basit Yapay Sinir Ağı</title>
+</head>
+<body>
+
+    <!--adım-1: ağırlıklara sıfıra yakın rastgele değerler atanır. -->
+    <script>
+        // 5*7 'lik' rastgele ağırlıklardan oluşan bir matris oluşturun ve w12, w14, w21, w23, w25, w33, w34, w35, w41, w43, w45, w47, w52,w54,w56 ağırlıklarını 0 atayın.
+        var w = new Array(5);
+        for (var i = 0; i < 5; i++) {
+            w[i] = new Array(7);
+            for (var j = 0; j < 7; j++) {
+                w[i][j] = Math.random();
+            }
+        }
+        w[0][1] = 0;
+        w[0][3] = 0;
+        w[0][5] = 0;
+        w[1][0] = 0;
+        w[1][2] = 0;
+        w[1][4] = 0;
+        w[1][6] = 0;
+        w[2][2] = 0;
+        w[2][3] = 0;
+        w[2][4] = 0;
+        w[3][0] = 0;
+        w[3][2] = 0;
+        w[3][4] = 0;
+        w[3][6] = 0;
+        w[4][1] = 0;
+        w[4][3] = 0;
+        w[4][5] = 0;
+
+        // ağırlıkları ekrana wij olarak document.write ile yazdır.
+        for (var i = 0; i < 5; i++) {
+            for (var j = 0; j < 7; j++) {
+                document.write("w" + (i + 1) + (j + 1) + " = " + w[i][j] + "<br>");
+            }
+        }
+        // 7*2'lik rastgele ağırlıklardan oluşan bir matris oluştur.
+        var ws = new Array(7);
+        for (var i = 0; i < 7; i++) {
+            ws[i] = new Array(2);
+            for (var j = 0; j < 2; j++) {
+                ws[i][j] = Math.random();
+            }
+        }
+        // ağırlıkları ekrana wsij olarak document.write ile yazdır.
+        for (var i = 0; i < 7; i++) {
+            for (var j = 0; j < 2; j++) {
+                document.write("ws" + (i + 1) + (j + 1) + " = " + ws[i][j] + "<br>");
+            }
+        }
+    </script>
+    <!--adım-2: veri seti  -->
+
+    <script>
+        var data = [[0,0,0,0,0],
+                  [0,0,0,0,1],
+                  [0,0,0,1,0],
+                  [0,0,0,1,1],
+                  [0,0,1,0,0],
+                  [0,0,1,0,1],
+                  [0,0,1,1,0],
+                  [0,0,1,1,1],
+                  [0,1,0,0,0],
+                  [0,1,0,0,1],
+                  [0,1,0,1,0],
+                  [0,1,0,1,1],
+                  [0,1,1,0,0],
+                  [0,1,1,0,1],
+                  [0,1,1,1,0],
+                  [0,1,1,1,1],
+                  [1,0,0,0,0],
+                  [1,0,0,0,1],
+                  [1,0,0,1,0],
+                  [1,0,0,1,1],
+                  [1,0,1,0,0],
+                  [1,0,1,0,1],
+                  [1,0,1,1,0],
+                  [1,0,1,1,1],
+                  [1,1,0,0,0],
+                  [1,1,0,0,1],
+                  [1,1,0,1,0],
+                  [1,1,0,1,1],
+                  [1,1,1,0,0],
+                  [1,1,1,0,1],
+                  [1,1,1,1,0],
+                  [1,1,1,1,1]]
+
+        var gercek = [0,0,0,1,0,0,1,1,0,0,0,0,0,0,0,1,0,1,0,0,0,1,0,0,1,0,1,0,0,1,1,1]
+                
+                  // data dizisinin birinci satırını ekrana yazdır.
+                    document.write(data[0] + "<br>");
+                    document.write(data[31] + "<br>");
+
+                // data dizisinin her satırındaki elemanları x1,x2,x3,x4,x5 olarak ekrana yazdır. her döngünün başına mini-batch yazdır.
+                for (var i = 0; i < 32; i++) {
+                    document.write("mini-batch--" + (i + 1) + "<br>");
+                    document.write("x1 = " + data[i][0] + "<br>");
+                    document.write("x2 = " + data[i][1] + "<br>");
+                    document.write("x3 = " + data[i][2] + "<br>");
+                    document.write("x4 = " + data[i][3] + "<br>");
+                    document.write("x5 = " + data[i][4] + "<br>");
+                }
+
+        // epoch = 10
+        var epoch = 100000;
+        // learning rate = 0.1
+        var learning_rate = 0.1;
+        // hata = 0.01
+        var hata = 0.001;
+        // hata = 0.01
+
+        // epoch sayısı kadar döngü oluştur, her epoch sonunda toplam hata hesapla. eğer toplam hata hata değerinden küçükse döngüyü sonlandır.
+        // küçük değilse epoch sayısını 1 arttır ve döngüyü tekrar başlat.
+        for (var i = 0; i < epoch; i++) {
+            var toplam_hata = 0;
+            for (var j = 0; j < 32; j++) {
+                // her bir mini-batch için aşağıdaki işlemleri yap.
+                // 1. gizli katman çıkışları hesapla.
+                var gizli_cikis = new Array(7);
+                for (var k = 0; k < 7; k++) {
+                    gizli_cikis[k] = 0;
+                    for (var l = 0; l < 5; l++) {
+                        gizli_cikis[k] += data[j][l] * w[l][k];
+                    }
+                    gizli_cikis[k] = 1 / (1 + Math.exp(-gizli_cikis[k]));
+                }
+                // 2. çıkış katman çıkışları hesapla.
+                var cikis_cikis = new Array(2);
+                for (var k = 0; k < 2; k++) {
+                    cikis_cikis[k] = 0;
+                    for (var l = 0; l < 7; l++) {
+                        cikis_cikis[k] += gizli_cikis[l] * ws[l][k];
+                    }
+                    cikis_cikis[k] = 1 / (1 + Math.exp(-cikis_cikis[k]));
+                }
+                // 3. çıkış katman hataları hesapla.
+                var cikis_hata = new Array(2);
+                for (var k = 0; k < 2; k++) {
+                    cikis_hata[k] = (gercek[j] - cikis_cikis[k]) * cikis_cikis[k] * (1 - cikis_cikis[k]);
+                }
+                // 4. gizli katman hataları hesapla.
+                var gizli_hata = new Array(7);
+                for (var k = 0; k < 7; k++) {
+                    gizli_hata[k] = 0;
+                    for (var l = 0; l < 2; l++) {
+                        gizli_hata[k] += cikis_hata[l] * ws[k][l];
+                    }
+                    gizli_hata[k] = gizli_hata[k] * gizli_cikis[k] * (1 - gizli_cikis[k]);
+                }
+                // 5. gizli katman ağırlıklarını güncelle.
+                for (var k = 0; k < 7; k++) {
+                    for (var l = 0; l < 5; l++) {
+                        w[l][k] += learning_rate * gizli_hata[k] * data[j][l];
+                    }
+                }
+                // 6. çıkış katman ağırlıklarını güncelle.
+                for (var k = 0; k < 2; k++) {
+                    for (var l = 0; l < 7; l++) {
+                        ws[l][k] += learning_rate * cikis_hata[k] * gizli_cikis[l];
+                    }
+                }
+                // 7. toplam hata hesapla.
+                for (var k = 0; k < 2; k++) {
+                    // toplam hatayı mse olarak hesapla
+                    toplam_hata += Math.pow((gercek[j] - cikis_cikis[k]), 2);
+                }
+            }
+            // toplam hata
+            document.write("Toplam hata: " + toplam_hata + "<br>");
+
+            // 8. eğer toplam hata hata değerinden küçükse döngüyü sonlandır.
+            if (toplam_hata < hata) {
+                break;
+            }
+        }
+
+        // 9. eğitim sonrası ağırlıkları ekrana yazdır.
+        document.write("Eğitim sonrası ağırlıklar: <br>");
+        document.write("Gizli katman ağırlıkları: <br>");
+        for (var i = 0; i < 7; i++) {
+            for (var j = 0; j < 5; j++) {
+                document.write(w[j][i] + " ");
+            }
+            document.write("<br>");
+        }
+        document.write("Çıkış katman ağırlıkları: <br>");
+        for (var i = 0; i < 2; i++) {
+            for (var j = 0; j < 7; j++) {
+                document.write(ws[j][i] + " ");
+            }
+            document.write("<br>");
+        }
+
+        // kullanıcıdan veri al ve tahmin et.
+        var x1 = prompt("x1 değerini giriniz: ");
+        var x2 = prompt("x2 değerini giriniz: ");
+        var x3 = prompt("x3 değerini giriniz: ");
+        var x4 = prompt("x4 değerini giriniz: ");
+        var x5 = prompt("x5 değerini giriniz: ");
+
+        // gizli katman çıkışları hesapla.
+        var gizli_cikis = new Array(7);
+        for (var k = 0; k < 7; k++) {
+            gizli_cikis[k] = 0;
+            for (var l = 0; l < 5; l++) {
+                gizli_cikis[k] += x1 * w[l][k];
+            }
+            gizli_cikis[k] = 1 / (1 + Math.exp(-gizli_cikis[k]));
+        }
+        // çıkış katman çıkışları hesapla.
+        var cikis_cikis = new Array(2);
+        for (var k = 0; k < 2; k++) {
+            cikis_cikis[k] = 0;
+            for (var l = 0; l < 7; l++) {
+                cikis_cikis[k] += gizli_cikis[l] * ws[l][k];
+            }
+            cikis_cikis[k] = 1 / (1 + Math.exp(-cikis_cikis[k]));
+        }
+        // hesaplanan çıkışları 0.5 değerinden büyükse 1 değilse 0 olarak atama.
+        for (var k = 0; k < 2; k++) {
+            if (cikis_cikis[k] > 0.5) {
+                cikis_cikis[k] = 1;
+            } else {
+                cikis_cikis[k] = 0;
+            }
+        }
+        // tahmin sonuçlarını ekrana yazdır.
+        document.write("Tahmin sonuçları: <br>");
+        document.write("x1: " + x1 + " x2: " + x2 + " x3: " + x3 + " x4: " + x4 + " x5: " + x5 + " <br>");
+        document.write("y1: " + cikis_cikis[0] + " y2: " + cikis_cikis[1] + " <br>");
+        
+
+
+    </script>
+
+
+
+</body>
+</html>

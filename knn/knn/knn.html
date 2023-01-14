@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <!--Datanın yüklenmesi-->
+    <script>
+        // data'yı yükleyelim
+        var data = []; // data'yı tutacak dizi oluşturduk.
+        var dataFile = "avilahtrain-tr.csv"; // data'yı tutan dosya adı
+        var req = new XMLHttpRequest(); // XMLHttpRequest nesnesi oluşturduk.
+        req.open("GET", dataFile, false); // dosyayı okumak için GET isteği yolladık.
+        req.send(null); // isteği gönderdik.
+        var data = req.responseText.split("\n"); // gelen cevabı satır satır ayırdık.
+        data = data.map(function (row) { // her satırı virgüle göre ayırdık.
+            return row.split(",");
+        });
+        data = data.map(function (row) { // her satırı sayıya çevirdik.
+            return row.map(function (value) {
+                return parseFloat(value);
+            });
+        });
+        document.write("Yüklenen data sayısı : " + data.length + " satır<br>"); // data'yı ekrana yazdırdık.
+        
+    </script>
+
+    <!-- KNN algoritması -->
+    <script>
+        // 1. uzaklık hesaplama fonksiyonu: minskowski-3 uzaklığını hesaplar.
+        function distance(point1, point2) {
+            var sum = 0;
+            for (var i = 0; i < point1.length; i++) {
+                sum += Math.pow(Math.abs(point1[i] - point2[i]), 3);
+            }
+            return Math.pow(sum, 1 / 3);
+        }
+        
+        // 2. en yakın komşu bulma fonksiyonu
+        function nearestNeighbor(point, data) { // en yakın komşuyu bulur.
+            var min = Infinity; // en yakın komşu uzaklığı
+            var minIndex = -1; // en yakın komşu indexi
+            for (var i = 0; i < data.length; i++) { // data'yı satır satır dolaş
+                var dist = distance(point, data[i]); // uzaklık fonksiyonunu kullanarak uzaklığı hesapla
+                if (dist < min) { // eğer uzaklık en yakın komşudan daha küçükse
+                    min = dist; // en yakın komşu uzaklığı olarak at
+                    minIndex = i; // en yakın komşu indexi olarak at
+                }
+            }
+            return minIndex; // en yakın komşu indexini döndür
+        }
+        // 3. komşu sayısına göre sınıf tahmini fonksiyonu
+        function knn(point, data, k) { // komşu sayısına göre sınıf tahmini yapar.
+            var votes = {}; // sınıfların oyları
+            for (var i = 0; i < k; i++) { // k komşu için
+                var nn = nearestNeighbor(point, data); // en yakın komşuyu bul
+                var label = data[nn][data[nn].length - 1]; // en yakın komşunun sınıfını bul
+                if (label in votes) { // eğer o sınıf daha önce oy verilmişse
+                    votes[label] += 1; // o sınıfın oy sayısını arttır
+                } else { // eğer o sınıf daha önce oy verilmemişse
+                    votes[label] = 1; // o sınıfın oy sayısını 1 yap
+                }
+                data.splice(nn, 1); // en yakın komşuyu data'dan çıkar
+            }
+            var maxVotes = 0; // en çok oy alan sınıfın oy sayısı
+            var maxVotesLabel = -1; // en çok oy alan sınıfın sınıfı
+            for (var label in votes) { // sınıfların oylarını dolaş
+                if (votes[label] > maxVotes) { // eğer o sınıfın oy sayısı en çok oy alan sınıfın oy sayısından büyükse
+                    maxVotes = votes[label]; // en çok oy alan sınıfın oy sayısını o sınıfın oy sayısı yap
+                    maxVotesLabel = label; // en çok oy alan sınıfın sınıfını o sınıf yap
+                }
+            }
+            return maxVotesLabel;
+        }
+        // 4. tahmin fonksiyonu
+        function predict(point, data, k) { // tahmin fonksiyonu
+            var label = knn(point, data, k); // komşu sayısına göre sınıf tahmini yap
+            return label; // tahmini döndür
+        }
+        // 5. doğruluk fonksiyonu
+        function accuracy(data, k) { // data'yı kullanarak doğruluk oranını hesaplar.
+            var correct = 0; // doğru tahmin sayısı
+            for (var i = 0; i < data.length; i++) { // data'yı satır satır dolaş
+                var point = data[i]; // satırı point değişkenine at
+                var label = point[point.length - 1]; // son elemanı label değişkenine at
+                point.splice(point.length - 1, 1); // son elemanı point dizisinden çıkar
+                var prediction = predict(point, data, k); // tahmin fonksiyonunu kullanarak tahmin et
+                if (prediction == label) { // tahmin doğruysa doğru tahmin sayısını arttır
+                    correct += 1; 
+                }
+            }
+            return correct / data.length;
+        }
+
+        // 5-Fold Cross-Validation
+        function crossValidation(data, k) { // 5-Fold Cross-Validation
+            var foldSize = Math.floor(data.length / 5); // 5 eşit parçaya böl
+            var accuracies = []; // doğruluk oranlarını tutacak dizi
+            for (var i = 0; i < 5; i++) { // 5 kere
+                var test = []; // test verisi
+                var train = []; // eğitim verisi
+                for (var j = 0; j < data.length; j++) { // data'yı satır satır dolaş
+                    if (j >= i * foldSize && j < (i + 1) * foldSize) { // eğer j i. foldun ilk elemanı ile son elemanı arasında ise
+                        test.push(data[j]); // test verisine ekle
+                    } else { // değilse
+                        train.push(data[j]); // eğitim verisine ekle
+                    }
+                }
+                accuracies.push(accuracy(train, k)); // eğitim verisini kullanarak doğruluk oranını hesapla ve doğruluk oranlarını tutan dizinin sonuna ekle
+            }
+            var sum = 0; // doğruluk oranlarının toplamı
+            for (var i = 0; i < accuracies.length; i++) { // doğruluk oranlarını dolaş
+                sum += accuracies[i]; // doğruluk oranlarının toplamını hesapla
+            }
+            return sum / accuracies.length; // doğruluk oranlarının toplamını doğruluk oranlarının sayısına böl
+        }
+
+        // k değerini kullanıcıdan alalım.
+        var k = prompt("k değerini giriniz : ");
+        var point = [0.15498,-0.3619,0.40989,-0.171945,0.261718,-0.307984,0.673182,-0.704353,-0.185368,-0.511041];
+        var label = predict(point, data, k);
+        document.write("Tahmin edilen sınıf : " + label + "<br>");
+        // 2. doğruluk fonksiyonunu test edelim.
+        var acc = accuracy(data, 3);
+        document.write("Doğruluk oranı : " + acc + "<br>");
+
+        // 5-Fold Cross-Validation
+        var acc = crossValidation(data, 5);
+        document.write("5-Fold Cross-Validation Doğruluk Oranı : " + acc + "<br>");
+
+    </script>
+
+    <!-- 0-11 arası olan küme etiketlerini canvan üzerinde göster-->
+    <script>
+
+        document.write("Küme etiketleri : <br><br>");
+
+        var canvas = document.createElement("canvas");
+        canvas.width = 500;
+        canvas.height = 500;
+        document.body.appendChild(canvas);
+        var ctx = canvas.getContext("2d");
+        var colors = ["red", "green", "blue", "yellow", "orange", "purple", "pink", "brown", "black", "gray", "white"];
+        for (var i = 0; i < data.length; i++) {
+            var point = data[i];
+            var label = point[point.length - 1];
+            ctx.fillStyle = colors[label];
+            ctx.fillRect(point[0] * 100 + 100, point[1] * 100 + 100, 5, 5);
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+    <!--plotty-->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="./DBSCAN.js"></script>
+
+    <style>
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class='col'>
+                <h1>DBSCAN-Kümeleme</h1>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class='col'>
+                <form>
+                    <div class="form-group">
+                        <label for="data">Data Serileri</label>
+                        <div class='input-group'>
+                            <div class='input-group-prepend' onclick="clearInput()">
+                                <span class="input-group-text" id="basic-addon1">Temizle</span>
+                            </div>
+                            <input type="text" class="form-control" id="data" aria-describedby="basic-addon1">
+                        </div>
+                        <small></small>
+                    </div>
+                    <div class="form-group">
+                        <label for="minpts">Minimum Nokta Sayısı</label>
+                        <input type="text" class="form-control" id="minpts" value=4>
+                    </div>
+                    <div class="form-group">
+                        <label for="epsilon">Epsilon Değeri</label>
+                        <input type="text" class="form-control" id="epsilon" value=10>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dimension">Boyut</label>
+                        <select class="form-control" value=2 id="dimension">
+                            <option value="1">1</option>
+                            <option value="2" selected>2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+
+
+                </form>
+                <button onclick="handleClick()" class="btn btn-primary">DBSCAN</button>
+                <button onclick="parseData()" class="btn btn-primary">VERİ AYIR</button>
+
+            </div>
+        </div>
+        <div class="row pt-4">
+            <div class="col-3 pt-3" id=resulttable>
+
+            </div>
+            <div class="col-9">
+                <div class="row">
+                    <div class="col-8">
+                        <input type="range" class='form-control range' min="1" max="100" value="50" id="myRange">
+                    </div>
+                    <div class="col-3">
+                        <Button class='btn btn-primary'  onclick="leftClick()"> < </Button>
+                        <Button class='btn btn-primary'  onclick="rightClick()"> > </Button>
+                    </div>
+                    <div class="col-1" id=myRangeValue>
+
+                    </div>
+                <div class="row pt-2">
+                    <div class="col-6" id=progressTable>
+
+                    </div>
+                    <div class="col-6" id=progressGraph>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+    </div>
+
+
+</body>
+
+</html>
